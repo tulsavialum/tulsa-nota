@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Fondo navy -->
+  <rect width="512" height="512" rx="80" fill="#0D2B4E"/>
+  <!-- Letra T grande en blanco -->
+  <rect x="96" y="120" width="320" height="52" rx="10" fill="white"/>
+  <rect x="216" y="120" width="80" height="272" rx="10" fill="white"/>
+  <!-- Acento cyan en la A de TULSA — línea decorativa inferior -->
+  <rect x="96" y="370" width="320" height="8" rx="4" fill="#00ADEF"/>
+  <!-- Texto ALUMINIO | VIDRIO pequeño -->
+  <text x="256" y="430" font-family="Arial, sans-serif" font-size="36"
+        font-weight="bold" fill="#00ADEF" text-anchor="middle"
+        letter-spacing="2">ALUMINIO | VIDRIO</text>
+</svg>
