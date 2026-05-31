@@ -617,8 +617,9 @@ if st.session_state["items"]:
                 # TABLA ENCABEZADO
                 # ─────────────────────────────────────────
 
+                col_num  = 8
                 col_cant = 12
-                col_desc = 118
+                col_desc = 110
                 col_med  = 30
                 col_imp  = 30
                 margen_x = 10
@@ -629,6 +630,7 @@ if st.session_state["items"]:
                 pdf.set_font("Helvetica", "B", 9)
                 pdf.set_draw_color(*NAVY)
 
+                pdf.cell(col_num,  9, "#",     1, 0, "C", True)
                 pdf.cell(col_cant, 9, "CANT.", 1, 0, "C", True)
                 pdf.cell(
                     col_desc, 9,
@@ -646,10 +648,12 @@ if st.session_state["items"]:
                 pdf.set_text_color(*NEGRO)
                 pdf.set_font("Helvetica", "", 9)
 
-                subtotal = 0
-                fila_par = False
+                subtotal  = 0
+                fila_par  = False
+                num_fila  = 0
 
                 for item in st.session_state["items"]:
+                    num_fila += 1
 
                     desc = limpiar_texto(item.get("Descripcion", item.get("Descripción", "")))
                     meds = limpiar_texto(item["Medidas"])
@@ -671,35 +675,43 @@ if st.session_state["items"]:
                     pdf.set_fill_color(*fill_color)
                     pdf.rect(
                         x, y,
-                        col_cant + col_desc + col_med + col_imp,
+                        col_num + col_cant + col_desc + col_med + col_imp,
                         altura, "F"
                     )
                     fila_par = not fila_par
 
                     pdf.set_draw_color(*GRIS_BORDE)
 
-                    # CANTIDAD
+                    # NUMERO CONSECUTIVO
                     pdf.set_xy(x, y)
-                    pdf.rect(x, y, col_cant, altura)
+                    pdf.rect(x, y, col_num, altura)
+                    pdf.set_font("Helvetica", "", 8)
+                    pdf.set_text_color(*GRIS_MED)
+                    pdf.multi_cell(col_num, altura, str(num_fila), 0, "C")
+                    pdf.set_text_color(*NEGRO)
+
+                    # CANTIDAD
+                    pdf.set_xy(x + col_num, y)
+                    pdf.rect(x + col_num, y, col_cant, altura)
                     pdf.set_font("Helvetica", "B", 9)
                     pdf.multi_cell(col_cant, altura, str(item["Cant"]), 0, "C")
 
-                    # DESCRIPCION — centrado vertical uniforme
+                    # DESCRIPCION
                     alto_texto = n_lineas * 5
                     y_desc     = y + (altura - alto_texto) / 2
                     pdf.set_font("Helvetica", "", 9)
-                    pdf.rect(x + col_cant, y, col_desc, altura)  # borde primero
-                    pdf.set_xy(x + col_cant + 2, y_desc)
+                    pdf.rect(x + col_num + col_cant, y, col_desc, altura)
+                    pdf.set_xy(x + col_num + col_cant + 2, y_desc)
                     pdf.multi_cell(col_desc - 2, 5, desc, 0, "J")
 
                     # MEDIDAS
-                    pdf.set_xy(x + col_cant + col_desc, y)
-                    pdf.rect(x + col_cant + col_desc, y, col_med, altura)
+                    pdf.set_xy(x + col_num + col_cant + col_desc, y)
+                    pdf.rect(x + col_num + col_cant + col_desc, y, col_med, altura)
                     pdf.multi_cell(col_med, altura, meds, 0, "C")
 
                     # IMPORTE
-                    pdf.set_xy(x + col_cant + col_desc + col_med, y)
-                    pdf.rect(x + col_cant + col_desc + col_med, y, col_imp, altura)
+                    pdf.set_xy(x + col_num + col_cant + col_desc + col_med, y)
+                    pdf.rect(x + col_num + col_cant + col_desc + col_med, y, col_imp, altura)
                     pdf.multi_cell(col_imp, altura, money(item["Total"]), 0, "R")
 
                     pdf.set_xy(x, y + altura)
@@ -877,10 +889,10 @@ if st.session_state["items"]:
                 texto_legal = (
                     "Este documento es una nota digital generada por TULSA Aluminio y Vidrio. "
                     "La recepci\xf3n del presente comprobante por cualquier medio electr\xf3nico "
-                    "(WhatsApp, correo o similar) constituye la aceptaci\xf3n de los trabajos "
-                    "realizados y de los T\xe9rminos y Condiciones de TULSA, con el mismo valor "
-                    "que una firma aut\xf3grafa conforme al C\xf3digo de Comercio y la Ley de "
-                    "Firma Electr\xf3nica."
+                    "(WhatsApp, correo o similar) constituye la aceptaci\xf3n total e "
+                    "incondicional de los trabajos realizados y de los T\xe9rminos y Condiciones "
+                    "de TULSA, con el mismo valor legal que una firma aut\xf3grafa, conforme "
+                    "al C\xf3digo de Comercio y el C\xf3digo Civil Federal."
                 )
                 pdf.multi_cell(190, 3.5, texto_legal, 0, "J")
 
