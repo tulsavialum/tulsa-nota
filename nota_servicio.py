@@ -43,6 +43,7 @@ _DEFAULTS = {
     "ss_tecnico":     "",
     "ss_esquema":     0,
     "ss_descuento":   10,
+    "ss_aplicar_desc": False,
     "ss_iva":         False,
     "ss_viaticos":    False,
     "ss_costo_viat":  0.0,
@@ -210,7 +211,8 @@ with st.sidebar:
                 st.session_state["ss_telefono"]   = datos.get("telefono", "")
                 st.session_state["ss_folio"]      = datos.get("folio", "TULSA-2024-001")
                 st.session_state["ss_esquema"]    = datos.get("esquema_idx", 0)
-                st.session_state["ss_descuento"]  = datos.get("descuento_pct", 10)
+                st.session_state["ss_aplicar_desc"] = datos.get("aplicar_descuento", False)
+                st.session_state["ss_descuento"]    = datos.get("descuento_pct", 10)
                 st.session_state["ss_iva"]        = datos.get("iva_incluido", False)
                 st.session_state["ss_viaticos"]   = datos.get("cobrar_viaticos", False)
                 st.session_state["ss_costo_viat"] = datos.get("costo_viaticos", 0.0)
@@ -285,10 +287,19 @@ with st.sidebar:
 
     st.divider()
 
-    descuento_pct = st.number_input(
-        "Descuento (%)", min_value=0, max_value=100,
-        value=st.session_state["ss_descuento"], key="ss_descuento_inp"
+    aplicar_descuento = st.checkbox(
+        "Aplicar descuento",
+        value=st.session_state["ss_aplicar_desc"],
+        key="ss_aplicar_desc"
     )
+    if aplicar_descuento:
+        descuento_pct = st.number_input(
+            "Descuento (%)", min_value=1, max_value=100,
+            value=max(1, st.session_state["ss_descuento"]),
+            key="ss_descuento_inp"
+        )
+    else:
+        descuento_pct = 0
 
     iva_incluido    = st.checkbox("Desglosar IVA (16%)",
                                   value=st.session_state["ss_iva"],
@@ -330,6 +341,7 @@ with st.sidebar:
         "tecnico":        tecnico,
         "fecha":          fecha_hoy.isoformat(),
         "esquema_idx":    0 if not es_obra_integral else 1,
+        "aplicar_descuento": aplicar_descuento,
         "descuento_pct":  descuento_pct,
         "iva_incluido":   iva_incluido,
         "cobrar_viaticos":cobrar_viaticos,
@@ -475,7 +487,8 @@ if st.session_state["items"]:
         total_mostrar_prev += iva_prev
 
     st.markdown(f"### Subtotal: {money(subtotal_prev)}")
-    st.markdown(f"### Descuento: - {money(descuento_prev)}")
+    if aplicar_descuento and descuento_prev > 0:
+        st.markdown(f"### Descuento ({descuento_pct}%): - {money(descuento_prev)}")
     if cobrar_viaticos:
         st.markdown(f"### Viaticos: {money(costo_viaticos)}")
     if iva_incluido:
@@ -520,16 +533,23 @@ if st.session_state["items"]:
                     except Exception:
                         pass
 
-                # Datos del negocio — izquierda, bajo el logo
-                pdf.set_text_color(200, 220, 240)  # blanco suave
-                pdf.set_font("Helvetica", "", 7)
-                neg_x = 62; neg_y = 10
-                pdf.set_xy(neg_x, neg_y)
-                pdf.cell(0, 4, "RFC: VIGA920128UJ4", 0, 1)
-                pdf.set_x(neg_x)
-                pdf.cell(0, 4, "Revoluci\xf3n 48, Barrio Alto. CP. 28450. Comala, Col.", 0, 1)
-                pdf.set_x(neg_x)
-                pdf.cell(0, 4, "Tel: 3122415481", 0, 1)
+                # Datos del negocio — centrados verticalmente entre logo y bloque NOTA
+                NEG_FONT  = 7.5
+                NEG_LH    = 5.2   # interlineado
+                NEG_LINES = 3     # RFC + direccion + tel
+                NEG_H     = NEG_LINES * NEG_LH
+                neg_x = 62
+                neg_y = (HEADER_H - NEG_H) / 2  # centrado vertical exacto
+                pdf.set_font("Helvetica", "", NEG_FONT)
+                pdf.set_text_color(200, 220, 240)
+                for neg_linea in [
+                    "RFC: VIGA920128UJ4",
+                    "Revoluci\xf3n 48, Barrio Alto. CP. 28450. Comala, Col.",
+                    "Tel: 3122415481",
+                ]:
+                    pdf.set_xy(neg_x, neg_y)
+                    pdf.cell(0, NEG_LH, neg_linea, 0, 0)
+                    neg_y += NEG_LH
 
                 # "NOTA" grande a la derecha
                 pdf.set_text_color(255, 255, 255)
@@ -734,7 +754,9 @@ if st.session_state["items"]:
                 tot_w = 90
                 tot_y = pdf.get_y()
 
-                n_filas = 3
+                n_filas = 2  # subtotal + viaticos siempre presentes
+                if aplicar_descuento and descuento > 0:
+                    n_filas += 1
                 if iva_incluido:
                     n_filas += 1
                 tot_h = n_filas * 8 + 20
@@ -759,11 +781,12 @@ if st.session_state["items"]:
 
                 fila_total("SUBTOTAL:", money(subtotal), negrita=True)
 
-                fila_total(
-                    f"DESCUENTO ({descuento_pct}%):",
-                    f"- {money(descuento)}",
-                    color_lbl=ROJO, color_val=ROJO, negrita=True
-                )
+                if aplicar_descuento and descuento > 0:
+                    fila_total(
+                        f"DESCUENTO ({descuento_pct}%):",
+                        f"- {money(descuento)}",
+                        color_lbl=ROJO, color_val=ROJO, negrita=True
+                    )
 
                 # VIATICOS
                 cy = pdf.get_y()
